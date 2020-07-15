@@ -37,6 +37,9 @@ class MiniDumpReader
 		void ceUnusedStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory);
 
 	private:
+		std::string getString(RVA rva);
+		std::wstring getStringW(RVA rva);
+
 		const char *buffer_;
 		const size_t length_;
 

@@ -158,6 +158,24 @@ void MiniDumpReader::moduleListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP
 	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
 	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
 
+	PMINIDUMP_MODULE_LIST pModuleList = (PMINIDUMP_MODULE_LIST)(buffer_ + pMdDirectory->Location.Rva);
+
+	std::cout << " - Number of Modules " << pModuleList->NumberOfModules << std::endl;
+
+	PMINIDUMP_MODULE pModule = pModuleList->Modules;
+	for (int i = 0; i < pModuleList->NumberOfModules; i++, pModule++) {
+		std::wstring moduleName = getStringW(pModule->ModuleNameRva);
+
+		std::wcout << " - - " << moduleName.c_str() << std::endl;
+
+		std::cout << " - - BaseOfImage " << pModule->BaseOfImage << std::endl;
+		std::cout << " - - SizeOfImage " << pModule->SizeOfImage << std::endl;
+		std::cout << " - - CheckSum " << pModule->CheckSum << std::endl;
+		std::cout << " - - TimeDateStamp " << pModule->TimeDateStamp << std::endl;
+		std::cout << " - - ModlpszModuleNameuleNameRva " << pModule->ModuleNameRva << std::endl;
+
+	}
+
 }
 
 void MiniDumpReader::memoryListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
@@ -308,4 +326,24 @@ void MiniDumpReader::memoryInfoListStream(MINIDUMP_STREAM_TYPE streamType, PMINI
 	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
 	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
 
+}
+
+
+std::string MiniDumpReader::getString(RVA rva)
+{
+	return std::string();
+}
+
+std::wstring MiniDumpReader::getStringW(RVA rva)
+{
+	std::wstring r;
+
+	const size_t *length = (const size_t *)(buffer_ + rva);
+	const wchar_t *data = (const wchar_t *)(buffer_ + rva + 4);
+
+	for (size_t i = 0; i < *length; i++, data++) {
+		r += *data;
+	}
+
+	return r;
 }
