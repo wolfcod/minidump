@@ -28,12 +28,12 @@ void MiniDumpReader::dumpHeader()
 	std::cout << "---- MINIDUMP header info " << std::endl;
 
 	std::cout << " Signature " << ((hasValidSignature()) ? "valid." : "invalid.") << std::endl;
-	std::cout << " Version " << pHeader->Version << std::endl;
+	DUMP_HEX_SYMBOL(" Version ", pHeader->Version);
 	DUMP_HEX_SYMBOL(" Number of Streams ", pHeader->NumberOfStreams);
 	DUMP_HEX_SYMBOL(" Stream Directory RVA ", pHeader->StreamDirectoryRva);
-	std::cout << " Checksum " << std::hex << pHeader->CheckSum << std::endl;
-	std::cout << " TimeDateStamp " << std::hex << pHeader->TimeDateStamp << std::endl;
-	std::cout << " Flags " << std::hex << pHeader->Flags << std::hex;
+	DUMP_HEX_SYMBOL(" Checksum ", pHeader->CheckSum);
+	DUMP_HEX_SYMBOL(" TimeDateStamp ", pHeader->TimeDateStamp);
+	DUMP_HEX_SYMBOL(" Flags ", pHeader->Flags);
 }
 
 void MiniDumpReader::parseStreamDirectory()
@@ -95,32 +95,29 @@ void MiniDumpReader::parseStreamDirectory()
 	}
 }
 
-void MiniDumpReader::unusedStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
+void MiniDumpReader::dumpDirectoryData(const std::string &type, MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - Stream " << streamType << std::endl;
+	std::cout << " - " << type.c_str() << " " << streamType << std::endl;
 
 	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
 	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
 	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
+}
+
+void MiniDumpReader::unusedStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
+{
+	dumpDirectoryData("Stream", streamType, pMdDirectory);
 }
 
 
 void MiniDumpReader::ceUnusedStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - CE Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
+	dumpDirectoryData("CE Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::threadListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - THREAD LIST Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
+	dumpDirectoryData("THREAD LIST Stream", streamType, pMdDirectory);
 
 	PMINIDUMP_THREAD_LIST pThreadList = (PMINIDUMP_THREAD_LIST)(buffer_ + pMdDirectory->Location.Rva);
 
@@ -152,11 +149,7 @@ void MiniDumpReader::threadListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP
 
 void MiniDumpReader::moduleListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - MODULE LIST Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
+	dumpDirectoryData("MODULE LIST Stream", streamType, pMdDirectory);
 
 	PMINIDUMP_MODULE_LIST pModuleList = (PMINIDUMP_MODULE_LIST)(buffer_ + pMdDirectory->Location.Rva);
 
@@ -164,7 +157,7 @@ void MiniDumpReader::moduleListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP
 
 	PMINIDUMP_MODULE pModule = pModuleList->Modules;
 	for (int i = 0; i < pModuleList->NumberOfModules; i++, pModule++) {
-		std::wstring moduleName = getStringW(pModule->ModuleNameRva);
+		std::wstring moduleName = getData<std::wstring, wchar_t>(pModule->ModuleNameRva);
 
 		std::wcout << " - - " << moduleName.c_str() << std::endl;
 
@@ -180,170 +173,75 @@ void MiniDumpReader::moduleListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP
 
 void MiniDumpReader::memoryListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - MEMORY LIST Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("MEMORY LIST Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::exceptionListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - EXCEPTION LIST Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("EXCEPTION LIST Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::systemInfoStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - SYSTEM INFO Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("SYSTEMINFO Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::threadExListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - THREADEX LIST Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("THREADEX LIST Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::memory64ListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - MEMORY64 LIST Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("MEMORY64 LIST Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::commentStreamA(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - COMMENTA Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("COMMENTA Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::commentStreamW(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - COMMENTW Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("COMMENTW Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::handleDataStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - HANDLE DATA Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("HANDLE DATA Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::functionTableStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - FUNCTION TABLE Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("FUNCTION TABLE Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::unloadedModuleListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - UNLOADED MODULE LIST Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("UNLOADED MODULE LIST Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::miscInfoStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - MISC INFO Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("MISC INFO Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::threadInfoListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - THREAD INFO LIST Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("THREAD INFO LIST Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::handleOperationListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - HANDLE OPERATION LIST Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("HANDLE OPERATION LIST Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::tokenStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - TOKEN Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
+	dumpDirectoryData("TOKEN Stream", streamType, pMdDirectory);
 }
 
 void MiniDumpReader::memoryInfoListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
-	std::cout << " - MEMORY INFO LIST Stream " << streamType << std::endl;
-
-	std::cout << " - Type: " << std::hex << pMdDirectory->StreamType << std::endl;
-	std::cout << " - RVA: " << std::hex << pMdDirectory->Location.Rva << std::endl;
-	std::cout << " - Size: " << std::hex << pMdDirectory->Location.DataSize << std::endl;
-
-}
-
-
-std::string MiniDumpReader::getString(RVA rva)
-{
-	return std::string();
-}
-
-std::wstring MiniDumpReader::getStringW(RVA rva)
-{
-	std::wstring r;
-
-	const size_t *length = (const size_t *)(buffer_ + rva);
-	const wchar_t *data = (const wchar_t *)(buffer_ + rva + 4);
-
-	for (size_t i = 0; i < *length; i++, data++) {
-		r += *data;
-	}
-
-	return r;
+	dumpDirectoryData("MEMORY INFO LIST Stream", streamType, pMdDirectory);
 }

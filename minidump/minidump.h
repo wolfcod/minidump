@@ -37,12 +37,27 @@ class MiniDumpReader
 		void ceUnusedStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory);
 
 	private:
-		std::string getString(RVA rva);
-		std::wstring getStringW(RVA rva);
+		void dumpDirectoryData(const std::string &type, MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory);
 
+	private:	/** internal data ... */
 		const char *buffer_;
 		const size_t length_;
-
-
+		
 		PMINIDUMP_HEADER pHeader;
+
+private:
+	/** template to extract a string in ascii or unicode from RVA*/
+	template<typename R, typename T>
+	R getData(RVA rva)
+	{
+		R r;
+
+		const size_t *length = (const size_t *)(buffer_ + rva);
+		const T *data = (const T *)(buffer_ + rva + 4);
+
+		for (size_t i = 0; i < *length; i++, data++)
+			r += *data;
+
+		return r;
+	}
 };
