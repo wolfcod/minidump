@@ -50,27 +50,27 @@ class PsDump(taskmods.MemDump):
 
                 f = open(os.path.join(self._config.DUMP_DIR, str(pid) + ".dmp"), 'wb')
                 if pagedata:
-                	for p in pagedata:
-                		"""Alignment to p[0]"""
-                		outfd.write("Reading block {0:02x} size {1:02x}\n".format(p[0], p[1]))
+                    for p in pagedata:
+                        """Alignment to p[0]"""
+                        outfd.write("Reading block {0:02x} size {1:02x}\n".format(p[0], p[1]))
 
-                		if prevaddr < p[0]:
-                		    size = p[0] - prevaddr
-                		    outfd.write("Allocating {0:02x} for alignment\n".format(size))
-                		    n = 0
-                		    align = bytearray(0x1000)
-                		    while n < size:
-                		       f.write(align)
-                		       n += 0x1000
+                        if prevaddr < p[0]:
+                            size = p[0] - prevaddr
+                            outfd.write("Allocating {0:02x} for alignment\n".format(size))
+                            n = 0
+                            align = bytearray(0x1000)
+                            while n < size:
+                               f.write(align)
+                               n += 0x1000
 
-                		data = task_space.read(p[0], p[1])
-                		if data == None:
-                			if self._config.verbose:
-                				outfd.write("Memory Not Accessible: Virtual Address: 0x{0:x} Size: 0x{1:x}\n".format(p[0], p[1]))
-                		else:
-                			f.write(data)
+                        data = task_space.read(p[0], p[1])
+                        if data == None:
+                            if self._config.verbose:
+                                outfd.write("Memory Not Accessible: Virtual Address: 0x{0:x} Size: 0x{1:x}\n".format(p[0], p[1]))
+                        else:
+                            f.write(data)
 
-                		prevaddr = p[0] + p[1]
+                        prevaddr = p[0] + p[1]
                 else:
-                	outfd.write("Unable to read pages for task.\n")
+                    outfd.write("Unable to read pages for task.\n")
                 f.close()
