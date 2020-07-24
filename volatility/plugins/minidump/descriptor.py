@@ -1,3 +1,5 @@
+import struct
+
 # wrapper of MINIDUMP_LOCATION_DESCRIPTOR
 class MiniDumpLocationDescriptor:
     def __init__(self):
@@ -14,9 +16,17 @@ class MiniDumpLocationDescriptor:
         self.RVA = value
     
     def to_bytes(self):
-        r = self.DataSize.to_bytes(4, byteorder = 'little', signed = False)
-        r += self.RVA.to_bytes(4, byteorder = 'little', signed = False)
+        r = struct.pack('<I', self.DataSize)
+        r += struct.pack('<I', self.RVA)
         return r
+
+    @classmethod
+    def create(cls, size, rva):
+        x = cls()
+        x.setSize(size)
+        x.setRVA(rva)
+        return x
+
 
 # wrapper of MINIDUMP_LOCATION_DESCRIPTOR64
 class MiniDumpLocation64(MiniDumpLocationDescriptor):
@@ -24,6 +34,6 @@ class MiniDumpLocation64(MiniDumpLocationDescriptor):
         MiniDumpLocationDescriptor.__init__(self)
 
     def to_bytes(self):
-        r = self.DataSize.to_bytes(8, byteorder='little', signed = False)
-        r+= self.RVA.to_bytes(8, byteorder='little', signed = False)
+        r = struct.pack('<Q', self.DataSize)
+        r+= struct.pack('<Q', self.RVA)
 

@@ -1,6 +1,11 @@
 import os
 
-from minidump import *
+from . import memory
+from . import descriptor
+from . import header
+
+from memory import MemoryStream
+from header import MiniDumpHeader
 
 class MiniDump:
     def __init__(self):
@@ -12,7 +17,7 @@ class MiniDump:
 ### MiniDumpWriter => serializable object
 class MiniDumpWriter:
     def __init__(self):
-        self.name = "MiniDumpWriter""
+        self.name = "MiniDumpWriter"
         self.memory = []
         self.memory64 = []
 
@@ -22,13 +27,13 @@ class MiniDumpWriter:
     def addMemory(self, va, size, buffer):
         m = MemoryStream(va, size, buffer)
         self.memory.append(m)
-
+        
     # write data into buffer...
     def write(self, fd):
         header = MiniDumpHeader()
         numberOfStreams = 0
 
-        header.NumberOfStreams = self.memory.count
+        header.NumberOfStreams = len(self.memory)
 
         fd.write(header.to_bytes())
 
@@ -37,13 +42,15 @@ class MiniDumpWriter:
 
         # write all memory stream into file...
         for m in self.memory:
-            pos = os.lseek(fd, 0, os.SEEK_CUR)
+            fd.flush()
+            pos = fd.tell()
             fd.write(m.to_bytes())
             memoryStream.append(m.getDescriptor(pos))
 
         # write all memory64 stream into file...
         for m in self.memory64:
-            pos = os.lseek(fd, 0, os.SEEK_CUR)
+            fd.flush()
+            pos = fd.tell()
             fd.write(m.to_bytes())
             memory64Stream.append(m.getDescriptor(pos))
 
@@ -54,11 +61,13 @@ class MiniDumpWriter:
         # todo
 
         # build stream directory
-        streamPosition = 0
+        fd.flush()
+        streamPosition = fd.tell()
 
         # update directory
-        os.lseek(fd, 0, os.SEEK_SET)
         header.NumberOfStreams = numberOfStreams
+        print ("Stream position ", streamPosition)
         header.StreamDirectoryRva = streamPosition
         
-        fd.write(header.to_butes())
+        fd.seek(0, os.SEEK_SET)
+        fd.write(header.to_bytes())

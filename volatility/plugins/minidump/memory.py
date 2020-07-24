@@ -1,4 +1,5 @@
-from minidump import MiniDumpLocationDescriptor
+from . import descriptor
+from descriptor import MiniDumpLocationDescriptor
 
 class MemoryStream(object):
 
@@ -8,11 +9,11 @@ class MemoryStream(object):
         self.data = data
     
     @classmethod
-    def from_data(cls, va, size, data)
+    def from_data(cls, va, size, data):
         return cls(va, size, data)
 
     @classmethod
-    def zero_data(cls, va, size)
+    def zero_data(cls, va, size):
         b = '\x00' * size
         return cls(va, size, b)
     

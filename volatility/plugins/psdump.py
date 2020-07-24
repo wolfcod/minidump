@@ -18,7 +18,8 @@ import volatility.debug as debug
 import volatility.obj as obj
 import volatility.exceptions as exceptions
 from volatility.renderers.basic import Address
-
+import minidump
+from minidump import MiniDumpWriter
 
 class PsDump(taskmods.MemDump):
     """Dump memory process to an dmp file"""
@@ -37,40 +38,35 @@ class PsDump(taskmods.MemDump):
         if not os.path.isdir(self._config.DUMP_DIR):
             debug.error(self._config.DUMP_DIR + " is not a directory")
 
+        mdw = MiniDumpWriter()
+
         for pid, task, pagedata in data:
             if self._config.PID is not None and pid !=  int(self._config.PID):
                 outfd.write("*" * 72 + "\n")
                 outfd.write("Skipping {0} [{1:6}]".format(task.ImageFileName, pid, str(pid)))
             else:
-                prevaddr = 0
                 outfd.write("*" * 72 + "\n")
 
                 task_space = task.get_process_address_space()
                 outfd.write("Writing {0} [{1:6}] to {2}.dmp\n".format(task.ImageFileName, pid, str(pid)))
 
                 f = open(os.path.join(self._config.DUMP_DIR, str(pid) + ".dmp"), 'wb')
+
                 if pagedata:
                     for p in pagedata:
                         """Alignment to p[0]"""
                         outfd.write("Reading block {0:02x} size {1:02x}\n".format(p[0], p[1]))
-
-                        if prevaddr < p[0]:
-                            size = p[0] - prevaddr
-                            outfd.write("Allocating {0:02x} for alignment\n".format(size))
-                            n = 0
-                            align = bytearray(0x1000)
-                            while n < size:
-                               f.write(align)
-                               n += 0x1000
 
                         data = task_space.read(p[0], p[1])
                         if data == None:
                             if self._config.verbose:
                                 outfd.write("Memory Not Accessible: Virtual Address: 0x{0:x} Size: 0x{1:x}\n".format(p[0], p[1]))
                         else:
-                            f.write(data)
+                            mdw.addMemory(p[0], p[1], data)
 
                         prevaddr = p[0] + p[1]
                 else:
                     outfd.write("Unable to read pages for task.\n")
+
+                mdw.write(f)
                 f.close()
