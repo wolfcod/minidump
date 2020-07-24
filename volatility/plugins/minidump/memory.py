@@ -32,3 +32,4 @@ class MemoryStream(object):
     # return a MiniDumpLocationDescriptor with right rva
     def getDescriptor(self, rva):
         T = MiniDumpLocationDescriptor.create(self.size, rva)
+        return T

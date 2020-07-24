@@ -10,20 +10,34 @@ using namespace TCLAP;
 /** read file into vector... */
 bool readFileContent(const std::string &fileName, std::vector<char> &buffer, size_t &length)
 {
+#ifdef _WIN32
+	HANDLE hFile = CreateFileA(fileName.c_str(), FILE_GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+	BY_HANDLE_FILE_INFORMATION info;
+
+	GetFileInformationByHandle(hFile, &info);
+
+	length = info.nFileSizeLow;
+#else
 	std::ifstream inFile(fileName, std::ios_base::binary);
 	inFile.seekg(0, std::ios_base::end);
 	length = inFile.tellg();
 	inFile.seekg(0, std::ios_base::beg);
-
+#endif
 	if (length == 0)
 		return false;
 
 	buffer.reserve(length);
+#ifdef _WIN32
+	DWORD ignore = 0;
+	ReadFile(hFile, buffer.data(), length, &ignore, NULL);
+	CloseHandle(hFile);
+#else
 	std::copy(std::istreambuf_iterator<char>(inFile),
 		std::istreambuf_iterator<char>(),
 		std::back_inserter(buffer));
 
 	inFile.close();
+#endif
 	return true;
 
 }

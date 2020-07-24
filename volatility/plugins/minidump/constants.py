@@ -1,7 +1,7 @@
-import enum
+import struct
 
 # MiniDumpStreamType used as 
-class MiniDumpStreamType(enum.IntEnum):
+class MiniDumpStreamType:
     UnusedStream = 0
     ReservedStream0 = 1
     ReservedStream1 = 2
@@ -33,7 +33,8 @@ class MiniDumpStreamType(enum.IntEnum):
 
     # convert MiniDumpStreamType in serializable value for structure...
     def to_bytes(self):
-        t = int(self.value).to_bytes(1, byteorder = 'little', signed = false)
+        t = struct.pack('c', self.value)
+        return t
 
     def __str__(self):
         t = 'MiniDumpStreamType %s' % (self.value)

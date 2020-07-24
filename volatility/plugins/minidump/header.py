@@ -2,7 +2,7 @@ import struct
 
 class MiniDumpHeader:
     def __init__(self):
-        self.Signature = 'PMDM'
+        self.Signature = 'MDMP'
         # MINIDUMP_VERSION and two bytes as 00 00
         self.Version = 42899 
         self.NumberOfStreams = 0

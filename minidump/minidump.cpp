@@ -42,12 +42,17 @@ void MiniDumpReader::parseStreamDirectory()
 
 	PMINIDUMP_DIRECTORY pDirectory = (PMINIDUMP_DIRECTORY)(buffer_ + pHeader->StreamDirectoryRva);
 
+	RVA maxRVA = 0;
+
 	for (int i = 0; i < pHeader->NumberOfStreams; i++, pDirectory++) {
 		std::cout << " - Stream " << i + 1 << std::endl;
 
 		std::cout << " - Type: " << std::hex << pDirectory->StreamType << std::endl;
 		std::cout << " - RVA: " << std::hex << pDirectory->Location.Rva << std::endl;
 		std::cout << " - Size: " << std::hex << pDirectory->Location.DataSize << std::endl;
+
+		if (pDirectory->Location.Rva + pDirectory->Location.DataSize > maxRVA)
+			maxRVA = pDirectory->Location.Rva + pDirectory->Location.DataSize;
 
 		switch (pDirectory->StreamType) {
 		case UnusedStream: 
@@ -93,6 +98,8 @@ void MiniDumpReader::parseStreamDirectory()
 
 		}
 	}
+
+	std::cout << "Max RVA indexed => " << std::hex << maxRVA << std::endl;
 }
 
 void MiniDumpReader::dumpDirectoryData(const std::string &type, MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
@@ -174,6 +181,17 @@ void MiniDumpReader::moduleListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP
 void MiniDumpReader::memoryListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
 	dumpDirectoryData("MEMORY LIST Stream", streamType, pMdDirectory);
+
+	PMINIDUMP_MEMORY_LIST pMemoryList = (PMINIDUMP_MEMORY_LIST)(buffer_ + pMdDirectory->Location.Rva);
+
+	std::cout << " - Number of Modules " << pMemoryList->NumberOfMemoryRanges << std::endl;
+
+	MINIDUMP_MEMORY_DESCRIPTOR *pMemoryRange = pMemoryList->MemoryRanges;
+
+	for (int i = 0; i < pMemoryList->NumberOfMemoryRanges; i++, pMemoryRange++) {
+		std::cout << " From " << pMemoryRange->StartOfMemoryRange << " " << pMemoryRange->Memory.DataSize << " " << " at " << pMemoryRange->Memory.Rva << std::endl;
+	}
+
 }
 
 void MiniDumpReader::exceptionListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
@@ -244,4 +262,26 @@ void MiniDumpReader::tokenStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRE
 void MiniDumpReader::memoryInfoListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
 	dumpDirectoryData("MEMORY INFO LIST Stream", streamType, pMdDirectory);
+
+	PMINIDUMP_MEMORY_INFO_LIST pMemoryList = (PMINIDUMP_MEMORY_INFO_LIST)(buffer_ + pMdDirectory->Location.Rva);
+
+	std::cout << " - Number of Entries " << pMemoryList->NumberOfEntries << std::endl;
+	std::cout << " - Size of Entry " << pMemoryList->SizeOfEntry << " == " << sizeof(MINIDUMP_MEMORY_INFO) << std::endl;
+	std::cout << " - Size of Header " << pMemoryList->SizeOfHeader << std::endl;	
+
+	MINIDUMP_MEMORY_INFO *memoryInfo = (MINIDUMP_MEMORY_INFO *)(buffer_ + pMdDirectory->Location.Rva + pMemoryList->SizeOfHeader);
+	
+	SIZE_T allocated = 0;
+
+	for (int i = 0; i < pMemoryList->NumberOfEntries; i++, memoryInfo++) {
+		std::cout << " -- BaseAddress " << std::hex << memoryInfo->BaseAddress << std::endl;
+		std::cout << " -- AllocationBase " << std::hex << memoryInfo->AllocationBase << std::endl;
+		if (memoryInfo->AllocationProtect != 0)
+			allocated += memoryInfo->RegionSize;
+
+		std::cout << " -- AllocationProtect " << std::hex << memoryInfo->AllocationProtect << std::endl;
+		std::cout << " -- RegionSize " << std::hex << memoryInfo->RegionSize << std::endl;
+	};
+
+	std::cout << "Allocated memory available ? =" << std::hex << allocated << std::endl;
 }
