@@ -212,6 +212,17 @@ void MiniDumpReader::threadExListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDU
 void MiniDumpReader::memory64ListStream(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
 {
 	dumpDirectoryData("MEMORY64 LIST Stream", streamType, pMdDirectory);
+	PMINIDUMP_MEMORY64_LIST pMemoryList = (PMINIDUMP_MEMORY64_LIST)(buffer_ + pMdDirectory->Location.Rva);
+
+	std::cout << " - Number of Modules " << pMemoryList->NumberOfMemoryRanges << std::endl;
+	std::cout << " - RVA => " << std::hex << pMemoryList->BaseRva << std::endl;
+
+	MINIDUMP_MEMORY_DESCRIPTOR64 *pMemoryRange = pMemoryList->MemoryRanges;
+
+	for (int i = 0; i < pMemoryList->NumberOfMemoryRanges; i++, pMemoryRange++) {
+		std::cout << " From " << pMemoryRange->StartOfMemoryRange << " " << pMemoryRange->DataSize << " " << " at " << std::endl;
+	}
+
 }
 
 void MiniDumpReader::commentStreamA(MINIDUMP_STREAM_TYPE streamType, PMINIDUMP_DIRECTORY pMdDirectory)
