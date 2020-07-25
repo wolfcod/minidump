@@ -45,11 +45,19 @@ class MiniDumpContext:
         fd.seek(pos, os.SEEK_SET)
 
     def append(self, fd, buffer, size):
+        # move on tail..
+
+        fd.seek(0, os.SEEK_END)
         pos = fd.tell()
 
-        # move on tail..
-        fd.seek(0, os.SEEK_END)
         fd.write(buffer)
-        
+        fd.flush()
+        return pos
+
+    def add_stream_data(self, fd, index, streamType, buffer):
+        size = len(buffer)
+        pos = self.append(fd, buffer, size)
+        self.write_stream_info(fd, index, streamType, size, pos)
+
     def __str__(self):
         return self.name

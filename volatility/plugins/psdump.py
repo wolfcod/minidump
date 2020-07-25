@@ -20,6 +20,7 @@ import volatility.exceptions as exceptions
 from volatility.renderers.basic import Address
 import minidump
 from minidump import MiniDumpWriter
+from minidump import SystemInfo
 
 class PsDump(taskmods.MemDump):
     """Dump memory process to an dmp file"""
@@ -38,8 +39,6 @@ class PsDump(taskmods.MemDump):
         if not os.path.isdir(self._config.DUMP_DIR):
             debug.error(self._config.DUMP_DIR + " is not a directory")
 
-        mdw = MiniDumpWriter()
-
         for pid, task, pagedata in data:
             if self._config.PID is not None and pid !=  int(self._config.PID):
                 outfd.write("*" * 72 + "\n")
@@ -51,6 +50,19 @@ class PsDump(taskmods.MemDump):
                 outfd.write("Writing {0} [{1:6}] to {2}.dmp\n".format(task.ImageFileName, pid, str(pid)))
 
                 f = open(os.path.join(self._config.DUMP_DIR, str(pid) + ".dmp"), 'wb')
+                
+                # MiniDumpWriter must be initialized inside task..
+                sysinfo = SystemInfo()
+
+                # collecting sysinfo for this task
+                sysinfo.MajorVersion = task.Peb.OSMajorVersion
+                sysinfo.MinorVersion = task.Peb.OSMinorVersion
+                sysinfo.BuildNumber = task.Peb.OSBuildNumber
+                sysinfo.PlatformId = task.Peb.OSPlatformId
+                #sysinfo.CSDVersion = task.Peb.CSDVersion
+                sysinfo.CSDVersion = "volatility".encode('utf-16')
+
+                mdw = MiniDumpWriter(sysinfo)
 
                 if pagedata:
                     for p in pagedata:

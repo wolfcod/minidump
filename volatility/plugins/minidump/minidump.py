@@ -8,6 +8,7 @@ from header import MiniDumpHeader
 from constants import MiniDumpStreamType
 from constants import MiniDumpType
 from context import MiniDumpContext
+from systeminfo import SystemInfo
 
 class MiniDump:
     def __init__(self):
@@ -18,9 +19,10 @@ class MiniDump:
 
 ### MiniDumpWriter => serializable object
 class MiniDumpWriter:
-    def __init__(self):
+    def __init__(self, sysinfo):
         self.name = "MiniDumpWriter"
         self.memory64 = []
+        self.sysinfo = sysinfo
 
     def __str__(self):
         return self.name
@@ -33,9 +35,14 @@ class MiniDumpWriter:
     def getNumberOfStreams(self):
         numberOfStreams = 0
 
+        if self.sysinfo is not None:
+            numberOfStreams = numberOfStreams + 1
+
         if len(self.memory64) > 0:
             numberOfStreams = numberOfStreams + 1
         
+        print("Number of stream is ", numberOfStreams)
+
         return numberOfStreams
 
     # write data into buffer...
@@ -44,6 +51,13 @@ class MiniDumpWriter:
 
         numberOfStreams = self.getNumberOfStreams()
         ctx.write_header(fd, numberOfStreams)
+
+        currStream = 0
+
+        # write sysinfo
+        if self.sysinfo is not None:
+            ctx.add_stream_data(fd, currStream, MiniDumpStreamType.SystemInfoStream, self.sysinfo.to_bytes())
+            currStream = currStream + 1
 
         # build memory list stream
         fd.flush()
@@ -56,7 +70,7 @@ class MiniDumpWriter:
         memoryList = struct.pack('<QQ', len(self.memory64), BaseRVA)
         fd.write(memoryList)
         
-        currStream = 0
+        
         # write datablock..
         for m in self.memory64:
             fd.write(struct.pack('<QQ', m.va, m.size))
@@ -69,6 +83,6 @@ class MiniDumpWriter:
 
         # write all memory64 stream into file...
         for m in self.memory64:
-            ctx.append(fd, m.to_butes(), m.length())
+            ctx.append(fd, m.to_bytes(), m.length())
 
         # build memory64 list stream
