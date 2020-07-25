@@ -46,7 +46,7 @@ class PsDump(taskmods.MemDump):
                 outfd.write("Skipping {0} [{1:6}]".format(task.ImageFileName, pid, str(pid)))
             else:
                 outfd.write("*" * 72 + "\n")
-
+                outfd.write("Getting Peb32 => {0}\n".format(task.Peb.OSMajorVersion))
                 task_space = task.get_process_address_space()
                 outfd.write("Writing {0} [{1:6}] to {2}.dmp\n".format(task.ImageFileName, pid, str(pid)))
 

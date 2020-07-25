@@ -29,6 +29,9 @@ class MemoryStream(object):
     def to_bytes(self):
         return self.data
 
+    def length(self):
+        return self.size
+        
     # return a MiniDumpLocationDescriptor with right rva
     def getDescriptor(self, rva):
         T = MiniDumpLocationDescriptor.create(self.size, rva)

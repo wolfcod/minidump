@@ -14,7 +14,6 @@ class MiniDumpContext:
 
     # write a MINIDUMP_HEADER into section
     def write_header(self, fd, NumberOfStreams):
-        
         self.hdr.NumberOfStreams = NumberOfStreams
         self.hdr.StreamDirectoryRva = len(self.hdr.to_bytes())
         fd.seek(0, os.SEEK_SET)
@@ -45,5 +44,12 @@ class MiniDumpContext:
         fd.flush()
         fd.seek(pos, os.SEEK_SET)
 
+    def append(self, fd, buffer, size):
+        pos = fd.tell()
+
+        # move on tail..
+        fd.seek(0, os.SEEK_END)
+        fd.write(buffer)
+        
     def __str__(self):
         return self.name

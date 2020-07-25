@@ -69,8 +69,6 @@ class MiniDumpWriter:
 
         # write all memory64 stream into file...
         for m in self.memory64:
-            fd.flush()
-            pos = fd.tell()
-            fd.write(m.to_bytes())
+            ctx.append(fd, m.to_butes(), m.length())
 
         # build memory64 list stream
