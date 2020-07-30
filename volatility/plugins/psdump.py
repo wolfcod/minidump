@@ -32,7 +32,10 @@ class PsDump(taskmods.MemDump):
         config.add_option('PID', short_option = 'p', default = None,
                           help = 'Operate on these Process IDs (comma-separated)',
                           action = 'store', type = 'str')
-
+        config.add_option('ADDR', short_option = 'a', default = None,
+                          help = 'Show info on VAD at or containing this address',
+                          action = 'store', type = 'int')
+              
     def render_text(self, outfd, data):
         if self._config.DUMP_DIR == None:
             debug.error("Please specify a dump directory (--dump-dir)")
@@ -40,6 +43,19 @@ class PsDump(taskmods.MemDump):
             debug.error(self._config.DUMP_DIR + " is not a directory")
 
         for pid, task, pagedata in data:
+
+            for vad in task.VadRoot.traverse():
+                if (self._config.ADDR is not None and 
+                            (self._config.ADDR < vad.Start or 
+                            self._config.ADDR > vad.End)):
+                    continue
+                if vad == None:
+                    outfd.write("Error: {0}".format(vad))
+                else:
+                    self.write_vad_short(outfd, vad)
+
+                outfd.write("\n")
+
             if self._config.PID is not None and pid !=  int(self._config.PID):
                 outfd.write("*" * 72 + "\n")
                 outfd.write("Skipping {0} [{1:6}]".format(task.ImageFileName, pid, str(pid)))
@@ -82,3 +98,24 @@ class PsDump(taskmods.MemDump):
 
                 mdw.write(f)
                 f.close()
+
+    def write_vad_short(self, outfd, vad):
+        """Renders a text version of a Short Vad"""
+        self.table_header(None,
+                          [("VAD node @", str(len("VAD node @"))),
+                           ("address", "[addrpad]"),
+                           ("Start", "5"),
+                           ("startaddr", "[addrpad]"),
+                           ("End", "3"),
+                           ("endaddr", "[addrpad]"),
+                           ("Tag", "3"),
+                           ("tagval", ""),
+                           ])
+        self.table_row(outfd, "VAD node @",
+                              vad.obj_offset,
+                              "Start",
+                              vad.Start,
+                              "End",
+                              vad.End,
+                              "Tag",
+                              vad.Tag)
