@@ -41,7 +41,12 @@ class CrashDump(taskmods.MemDump):
         config.add_option('USERMODE', short_option = 'u',
                           help = 'Dump pages only from userland range..',
                           action = 'store_true', default=True)
-              
+
+    def create_loaded_modules(self, task):
+        for m in task.get_load_modules():
+            print(m.BaseDllName)
+            print(m.SizeOfImage)
+
     def create_sysinfo(self, task):
         sysinfo = SystemInfo()
 
@@ -73,9 +78,14 @@ class CrashDump(taskmods.MemDump):
             if vad == None:
                 outfd.write("Error: {0}".format(vad))
             else:
-                memoryList.add_va(vad.Start, vad.Start, vad.VadFlags.Protection.v(), vad.End - vad.Start,
-                                  vad.VadFlags.VadType.v(), vad.VadFlags.Protection.v(), 0x20000)
-        return memoryList
+                if hasattr(vad.VadFlags, "VadType"):
+                    memoryList.add_va(vad.Start, vad.Start, vad.VadFlags.Protection.v(), vad.End - vad.Start,
+                                    vad.VadFlags.VadType.v(), vad.VadFlags.Protection.v(), 0x20000)
+                else:
+                    memoryList.add_va(vad.Start, vad.Start, vad.VadFlags.Protection.v(), vad.End - vad.Start,
+                                    0, vad.VadFlags.Protection.v(), 0x20000)
+                    
+            return memoryList
 
     def render_text(self, outfd, data):
         if self._config.DUMP_DIR == None:
@@ -88,6 +98,7 @@ class CrashDump(taskmods.MemDump):
             mdw = MiniDumpWriter(MiniDumpType.MiniDumpWithFullMemory)
             f = open(os.path.join(self._config.DUMP_DIR, str(pid) + ".dmp"), 'wb')
 
+            self.create_loaded_modules(task)
             if self._config.PID is not None and pid !=  int(self._config.PID):
                 outfd.write("*" * 72 + "\n")
                 outfd.write("Skipping {0} [{1:6}]".format(task.ImageFileName, pid, str(pid)))
@@ -105,7 +116,7 @@ class CrashDump(taskmods.MemDump):
                 if pagedata:
                     for p in pagedata:
                         """Alignment to p[0]"""
-                        outfd.write("Reading block {0:02x} size {1:02x}\n".format(p[0], p[1]))
+                        #outfd.write("Reading block {0:02x} size {1:02x}\n".format(p[0], p[1]))
 
                         data = task_space.read(p[0], p[1])
                         if data == None:

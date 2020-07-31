@@ -51,13 +51,13 @@ class MemoryInfoListStream:
         t += struct.pack('<I', MINIDUMP_MEMORY_INFO.sizeof())
         t += struct.pack('<I', len(self.descriptors))
 
-        for desc in descriptors:
+        for desc in self.descriptors:
             t += desc.to_bytes()
         
         return t
 
     def add_va(self, BaseAddress, AllocationBase, AllocationProtect, RegionSize, State, Protect, Type):
-        self.descriptors.add(MINIDUMP_MEMORY_INFO.create(BaseAddress, AllocationBase, AllocationProtect, RegionSize, State, Protect, Type))
+        self.descriptors.append(MINIDUMP_MEMORY_INFO.create(BaseAddress, AllocationBase, AllocationProtect, RegionSize, State, Protect, Type))
 
 class MemoryStream:
 

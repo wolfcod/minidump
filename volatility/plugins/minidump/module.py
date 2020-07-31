@@ -3,6 +3,37 @@ import struct
 from . import descriptor
 from descriptor import MiniDumpLocationDescriptor
 
+class VS_FIXEDFILEINFO(object):
+    def __init__(self):
+        self.dwSignature = 0
+        self.dwStrucVersion = 0
+        self.dwFileVersionMS = 0
+        self.dwFileVersionLS = 0
+        self.dwProductVersionMS = 0
+        self.dwProductVersionLS = 0
+        self.dwFileFlagsMask = 0
+        self.dwFileFlags = 0
+        self.dwFileOS = 0
+        self.dwFileType = 0
+        self.dwFileSubtype = 0
+        self.dwFileDateMS = 0
+        self.dwFileDateLS = 0
+    
+    def to_bytes(self):
+        t = struct.pack('<I', self.dwSignature)
+        t += struct.pack('<I', self.dwStrucVersion)
+        t += struct.pack('<I', self.dwFileVersionMS)
+        t += struct.pack('<I', self.dwFileVersionLS
+        t += struct.pack('<I', self.dwProductVersionMS)
+        t += struct.pack('<I', self.dwProductVersionLS)
+        t += struct.pack('<I', self.dwFileFlagsMask)
+        t += struct.pack('<I', self.dwFileFlags)
+        t += struct.pack('<I', self.dwFileOS)
+        t += struct.pack('<I', self.dwFileType)
+        t += struct.pack('<I', self.dwFileSubtype)
+        t += struct.pack('<I', self.dwFileDateMS)
+        t += struct.pack('<I', self.dwFileDateLS)
+
 class MINIDUMP_MODULE(object):
     def __init__(self):
         self.BaseOfImage = 0
@@ -10,32 +41,35 @@ class MINIDUMP_MODULE(object):
         self.CheckSum = 0
         self.TimeDateStamp = 0
         self.ModuleNameRva = 0
+        self.VersionInfo = VS_FIXEDFILEINFO()
+        self.CvRecord =  MiniDumpLocationDescriptor()
+        self.MiscRecord = MiniDumpLocationDescriptor()
+
         self.Reserved0 = 0
         self.Reserved1 = 0
     
     def to_bytes(self):
-        t = struct.pack('<Q', self.BaseAddress)
-        t += struct.pack('<Q', self.AllocationBase)
-        t += struct.pack('<I', self.AllocationProtect)
-        t += struct.pack('I', 0) # alignment1
-        t += struct.pack('<Q', self.RegionSize)
-        t += struct.pack('<I', self.State)
-        t += struct.pack('<I', self.Protect)
-        t += struct.pack('<I', self.Type)
+        t = struct.pack('<Q', self.BaseOfImage)
+        t += struct.pack('<I', self.SizeOfImage)
+        t += struct.pack('<I', self.CheckSum)
+        t += struct.pack('<I', self.TimeDateStamp)
+        t += struct.pack('<I', self.ModuleNameRva)
+        t += self.VersionInfo.to_bytes()
+        t += self.CvRecord.to_bytes()
+        t += self.MiscRecord.to_bytes()
+
         t += struct.pack('QQ', self.Reserved0, self.Reserved1) # alignment2
 
         return t
 
     @classmethod
-    def create(cls, BaseAddress, AllocationBase, AllocationProtect, RegionSize, State, Protect, Type):
+    def create(cls, BaseOfImage, SizeOfImage, CheckSum, TimeDateStamp, ModuleNameRva):
         x = cls()
-        x.BaseAddress = BaseAddress
-        x.AllocationBase = AllocationBase
-        x.AllocationProtect = AllocationProtect
-        x.RegionSize = RegionSize
-        x.State = State
-        x.Protect = Protect
-        x.Type = Type
+        x.BaseOfImage = BaseOfImage
+        x.SizeOfImage = SizeOfImage
+        x.CheckSum = CheckSum
+        x.TimeDateStamp = TimeDateStamp
+        x.ModuleNameRva = ModuleNameRva
         return x
     
     @classmethod
