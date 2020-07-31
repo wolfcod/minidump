@@ -81,10 +81,6 @@ class PsDump(taskmods.MemDump):
             mdw = MiniDumpWriter(MiniDumpType.MiniDumpWithFullMemory)
             f = open(os.path.join(self._config.DUMP_DIR, str(pid) + ".dmp"), 'wb')
 
-            # add the descriptor...
-            memoryList = self.createMemoryList(outfd, task)
-            mdw.add_stream(MiniDumpStreamType.MemoryInfoListStream, memoryList.to_bytes())
-
             if self._config.PID is not None and pid !=  int(self._config.PID):
                 outfd.write("*" * 72 + "\n")
                 outfd.write("Skipping {0} [{1:6}]".format(task.ImageFileName, pid, str(pid)))
@@ -115,9 +111,16 @@ class PsDump(taskmods.MemDump):
                 else:
                     outfd.write("Unable to read pages for task.\n")
 
-            # dump all data available inside file 
-            mdw.write(f)
-            
+            # write ThreadListStream
+            # write ModuleListStream
+            # write MemoryListStream
+
+            # write MemoryListInfoStream
+            memoryList = self.createMemoryList(outfd, task)
+            mdw.add_stream(MiniDumpStreamType.MemoryInfoListStream, memoryList.to_bytes())
+
+            # build crashdump file and append at end of file all dumped blocks... 
+
             f.close()
 
     def write_vad_short(self, outfd, vad):
