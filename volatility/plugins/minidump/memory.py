@@ -1,5 +1,63 @@
+import struct
+
 from . import descriptor
 from descriptor import MiniDumpLocationDescriptor
+
+class MINIDUMP_MEMORY_INFO(object):
+    def __init__(self):
+        self.BaseAddress = 0
+        self.AllocationBase = 0
+        self.AllocationProtect = 0
+        self.RegionSize = 0
+        self.State = 0
+        self.Protect = 0
+        self.Type = 0
+    
+    def to_bytes(self):
+        t = struct.pack('<Q', self.BaseAddress)
+        t += struct.pack('<Q', self.AllocationBase)
+        t += struct.pack('<I', self.AllocationProtect)
+        t += struct.pack('I', 0) # alignment1
+        t += struct.pack('<Q', self.RegionSize)
+        t += struct.pack('<I', self.State)
+        t += struct.pack('<I', self.Protect)
+        t += struct.pack('<I', self.Type)
+        t += struct.pack('I', 0) # alignment2
+
+        return t
+
+    @classmethod
+    def create(cls, BaseAddress, AllocationBase, AllocationProtect, RegionSize, State, Protect, Type):
+        x = cls()
+        x.BaseAddress = BaseAddress
+        x.AllocationBase = AllocationBase
+        x.AllocationProtect = AllocationProtect
+        x.RegionSize = RegionSize
+        x.State = State
+        x.Protect = Protect
+        x.Type = Type
+        return x
+    
+    @classmethod
+    def sizeof(cls):
+        return 48 # sizeof(MEMORY_TYPE_INFO)
+
+class MemoryInfoListStream(object):
+    def __init__(self):
+        self.descriptors = []
+
+    def to_bytes(self):
+        t = struct.pack('<I', 16) # sizeof MINIDUMP_MEMORY_INFO_LIST
+        t += struct.pack('<I', MINIDUMP_MEMORY_INFO.sizeof())
+        t += struct.pack('<I', len(self.descriptors))
+
+        for desc in descriptors:
+            t += desc.to_bytes()
+        
+        return t
+        
+    def add_va(self, BaseAddress, AllocationBase, AllocationProtect, RegionSize, State, Protect, Type):
+        self.descriptors.add(MINIDUMP_MEMORY_INFO.create(BaseAddress, AllocationBase, AllocationProtect, RegionSize, State, Protect, Type))
 
 class MemoryStream(object):
 
