@@ -1,13 +1,13 @@
 # Volatility
 #
-# psdump - Create a flat file with all data available for a process
+# crashdump - Create a crashdump file for a process
 
 # Author:
 # cod <cod@sysleave.org>
 #
 
 
-"""psdump example file"""
+"""crashdump example file"""
 
 import os
 import struct
@@ -25,7 +25,7 @@ from minidump import MiniDumpStreamType
 from minidump import MiniDumpType
 from minidump import MemoryInfoListStream
 
-class PsDump(taskmods.MemDump):
+class CrashDump(taskmods.MemDump):
     """Dump memory process to an dmp file"""
     def __init__(self, config, *args, **kwargs):
         taskmods.MemMap.__init__(self, config, *args, **kwargs)
