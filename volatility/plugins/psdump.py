@@ -23,6 +23,7 @@ from minidump import MiniDumpWriter
 from minidump import SystemInfo
 from minidump import MiniDumpStreamType
 from minidump import MiniDumpType
+from minidump import MemoryInfoListStream
 
 class PsDump(taskmods.MemDump):
     """Dump memory process to an dmp file"""
@@ -54,6 +55,20 @@ class PsDump(taskmods.MemDump):
 
         return sysinfo
 
+    def createMemoryList(self, outfd, task):
+        memoryList = MemoryInfoListStream()
+
+        for vad in task.VadRoot.traverse():
+            if (self._config.ADDR is not None and 
+                (self._config.ADDR < vad.Start or 
+                self._config.ADDR > vad.End)):
+                continue
+            if vad == None:
+                outfd.write("Error: {0}".format(vad))
+            else:
+                memoryList.add_va(vad.Start, vad.Start, vad.VadFlags.Protection.v(), vad.End - vad.Start,
+                                  vad.VadFlags.VadType.v(), vad.VadFlags.Protection.v(), 0x20000)
+        return memoryList
 
     def render_text(self, outfd, data):
         if self._config.DUMP_DIR == None:
@@ -66,17 +81,9 @@ class PsDump(taskmods.MemDump):
             mdw = MiniDumpWriter(MiniDumpType.MiniDumpWithFullMemory)
             f = open(os.path.join(self._config.DUMP_DIR, str(pid) + ".dmp"), 'wb')
 
-            for vad in task.VadRoot.traverse():
-                if (self._config.ADDR is not None and 
-                            (self._config.ADDR < vad.Start or 
-                            self._config.ADDR > vad.End)):
-                    continue
-                if vad == None:
-                    outfd.write("Error: {0}".format(vad))
-                else:
-                    self.write_vad_short(outfd, vad)
-
-                outfd.write("\n")
+            # add the descriptor...
+            memoryList = self.createMemoryList(outfd, task)
+            mdw.add_stream(MiniDumpStreamType.MemoryInfoListStream, memoryList.to_bytes())
 
             if self._config.PID is not None and pid !=  int(self._config.PID):
                 outfd.write("*" * 72 + "\n")

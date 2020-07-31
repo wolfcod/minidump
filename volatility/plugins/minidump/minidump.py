@@ -55,7 +55,8 @@ class MiniDumpWriter:
 
     def add_stream(self, streamType, streamContent):
         stream = StreamObject(streamType, streamContent)
-
+        self.streams.add(stream)
+        
     # write data into buffer...
     def write(self, fd):
         ctx = MiniDumpContext(self.mdType)
