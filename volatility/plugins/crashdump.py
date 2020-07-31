@@ -38,18 +38,25 @@ class CrashDump(taskmods.MemDump):
         config.add_option('ADDR', short_option = 'a', default = None,
                           help = 'Show info on VAD at or containing this address',
                           action = 'store', type = 'int')
-        config.add_option('ÚSERMODE', short_option = 'u',
+        config.add_option('USERMODE', short_option = 'u',
                           help = 'Dump pages only from userland range..',
                           action = 'store_true', default=True)
               
     def create_sysinfo(self, task):
         sysinfo = SystemInfo()
 
+        if task is None:
+            return sysinfo
+        if task.Peb is None:
+            return sysinfo
+        
         # collecting sysinfo for this task
-        sysinfo.MajorVersion = task.Peb.OSMajorVersion
-        sysinfo.MinorVersion = task.Peb.OSMinorVersion
-        sysinfo.BuildNumber = task.Peb.OSBuildNumber
-        sysinfo.PlatformId = task.Peb.OSPlatformId
+        if task.Peb.OSMajorVersion is not None:
+            sysinfo.MajorVersion = task.Peb.OSMajorVersion
+            sysinfo.MinorVersion = task.Peb.OSMinorVersion
+            sysinfo.BuildNumber = task.Peb.OSBuildNumber
+            sysinfo.PlatformId = task.Peb.OSPlatformId
+        
         #sysinfo.CSDVersion = task.Peb.CSDVersion
         sysinfo.CSDVersion = "volatility PsDump".encode('utf-16')
 

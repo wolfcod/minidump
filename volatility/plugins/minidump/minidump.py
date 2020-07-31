@@ -4,6 +4,7 @@ import struct
 from . import *
 
 from memory import MemoryStream
+from memory import MemoryInfoListStream
 from header import MiniDumpHeader
 from constants import MiniDumpStreamType
 from constants import MiniDumpType
@@ -48,15 +49,13 @@ class MiniDumpWriter:
         i = len(self.Streams)
         if len(self.memory64) > 0:
             i = i + 1
-        else:
-            # nothing!
-
+        
         return i
 
     def add_stream(self, streamType, streamContent):
         stream = StreamObject(streamType, streamContent)
-        self.streams.add(stream)
-        
+        self.streams.append(stream)
+
     # write data into buffer...
     def write(self, fd):
         ctx = MiniDumpContext(self.mdType)

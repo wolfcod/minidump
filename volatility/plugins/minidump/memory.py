@@ -3,7 +3,7 @@ import struct
 from . import descriptor
 from descriptor import MiniDumpLocationDescriptor
 
-class MINIDUMP_MEMORY_INFO(object):
+class MINIDUMP_MEMORY_INFO:
     def __init__(self):
         self.BaseAddress = 0
         self.AllocationBase = 0
@@ -42,7 +42,7 @@ class MINIDUMP_MEMORY_INFO(object):
     def sizeof(cls):
         return 48 # sizeof(MEMORY_TYPE_INFO)
 
-class MemoryInfoListStream(object):
+class MemoryInfoListStream:
     def __init__(self):
         self.descriptors = []
 
@@ -55,11 +55,11 @@ class MemoryInfoListStream(object):
             t += desc.to_bytes()
         
         return t
-        
+
     def add_va(self, BaseAddress, AllocationBase, AllocationProtect, RegionSize, State, Protect, Type):
         self.descriptors.add(MINIDUMP_MEMORY_INFO.create(BaseAddress, AllocationBase, AllocationProtect, RegionSize, State, Protect, Type))
 
-class MemoryStream(object):
+class MemoryStream:
 
     def __init__(self, va, size, data):
         self.va = va
