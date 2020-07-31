@@ -21,6 +21,8 @@ from volatility.renderers.basic import Address
 import minidump
 from minidump import MiniDumpWriter
 from minidump import SystemInfo
+from minidump import MiniDumpStreamType
+from minidump import MiniDumpType
 
 class PsDump(taskmods.MemDump):
     """Dump memory process to an dmp file"""
@@ -35,7 +37,24 @@ class PsDump(taskmods.MemDump):
         config.add_option('ADDR', short_option = 'a', default = None,
                           help = 'Show info on VAD at or containing this address',
                           action = 'store', type = 'int')
+        config.add_option('ÚSERMODE', short_option = 'u',
+                          help = 'Dump pages only from userland range..',
+                          action = 'store_true', default=True)
               
+    def create_sysinfo(self, task):
+        sysinfo = SystemInfo()
+
+        # collecting sysinfo for this task
+        sysinfo.MajorVersion = task.Peb.OSMajorVersion
+        sysinfo.MinorVersion = task.Peb.OSMinorVersion
+        sysinfo.BuildNumber = task.Peb.OSBuildNumber
+        sysinfo.PlatformId = task.Peb.OSPlatformId
+        #sysinfo.CSDVersion = task.Peb.CSDVersion
+        sysinfo.CSDVersion = "volatility PsDump".encode('utf-16')
+
+        return sysinfo
+
+
     def render_text(self, outfd, data):
         if self._config.DUMP_DIR == None:
             debug.error("Please specify a dump directory (--dump-dir)")
@@ -43,6 +62,9 @@ class PsDump(taskmods.MemDump):
             debug.error(self._config.DUMP_DIR + " is not a directory")
 
         for pid, task, pagedata in data:
+
+            mdw = MiniDumpWriter(MiniDumpType.MiniDumpWithFullMemory)
+            f = open(os.path.join(self._config.DUMP_DIR, str(pid) + ".dmp"), 'wb')
 
             for vad in task.VadRoot.traverse():
                 if (self._config.ADDR is not None and 
@@ -64,21 +86,11 @@ class PsDump(taskmods.MemDump):
                 outfd.write("Getting Peb32 => {0}\n".format(task.Peb.OSMajorVersion))
                 task_space = task.get_process_address_space()
                 outfd.write("Writing {0} [{1:6}] to {2}.dmp\n".format(task.ImageFileName, pid, str(pid)))
-
-                f = open(os.path.join(self._config.DUMP_DIR, str(pid) + ".dmp"), 'wb')
                 
-                # MiniDumpWriter must be initialized inside task..
-                sysinfo = SystemInfo()
+                # create SysInfo stream from task..
+                sysinfo = self.create_sysinfo(task)
 
-                # collecting sysinfo for this task
-                sysinfo.MajorVersion = task.Peb.OSMajorVersion
-                sysinfo.MinorVersion = task.Peb.OSMinorVersion
-                sysinfo.BuildNumber = task.Peb.OSBuildNumber
-                sysinfo.PlatformId = task.Peb.OSPlatformId
-                #sysinfo.CSDVersion = task.Peb.CSDVersion
-                sysinfo.CSDVersion = "volatility".encode('utf-16')
-
-                mdw = MiniDumpWriter(sysinfo)
+                mdw.add_stream(MiniDumpStreamType.SystemInfoStream, sysinfo.to_bytes())
 
                 if pagedata:
                     for p in pagedata:
@@ -90,14 +102,16 @@ class PsDump(taskmods.MemDump):
                             if self._config.verbose:
                                 outfd.write("Memory Not Accessible: Virtual Address: 0x{0:x} Size: 0x{1:x}\n".format(p[0], p[1]))
                         else:
-                            mdw.addMemory(p[0], p[1], data)
+                            mdw.add_memory_dump(p[0], p[1], data)
 
                         prevaddr = p[0] + p[1]
                 else:
                     outfd.write("Unable to read pages for task.\n")
 
-                mdw.write(f)
-                f.close()
+            # dump all data available inside file 
+            mdw.write(f)
+            
+            f.close()
 
     def write_vad_short(self, outfd, vad):
         """Renders a text version of a Short Vad"""

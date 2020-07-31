@@ -17,49 +17,60 @@ class MiniDump:
     def __str__(self):
         return self.name
 
+class StreamObject:
+    def __init__(self, streamType, content):
+        self.streamType = streamType
+        self.content = content
+    
+    def getStreamType(self):
+        return self.streamType
+    
+    def getContent(self):
+        return self.content
+    
 ### MiniDumpWriter => serializable object
 class MiniDumpWriter:
-    def __init__(self, sysinfo):
+    def __init__(self, mdType):
         self.name = "MiniDumpWriter"
         self.memory64 = []
-        self.sysinfo = sysinfo
+        self.mdType = mdType
+        self.streams = []
 
     def __str__(self):
         return self.name
     
-    def addMemory(self, va, size, buffer):
+    def add_memory_dump(self, va, size, buffer):
         m = MemoryStream(va, size, buffer)
         self.memory64.append(m)
 
     # number of streams available..
     def getNumberOfStreams(self):
-        numberOfStreams = 0
-
-        if self.sysinfo is not None:
-            numberOfStreams = numberOfStreams + 1
-
+        i = len(self.Streams)
         if len(self.memory64) > 0:
-            numberOfStreams = numberOfStreams + 1
-        
-        print("Number of stream is ", numberOfStreams)
+            i = i + 1
+        else:
+            # nothing!
 
-        return numberOfStreams
+        return i
+
+    def add_stream(self, streamType, streamContent):
+        stream = StreamObject(streamType, streamContent)
 
     # write data into buffer...
     def write(self, fd):
-        ctx = MiniDumpContext(MiniDumpType.MiniDumpWithFullMemory)
+        ctx = MiniDumpContext(self.mdType)
 
         numberOfStreams = self.getNumberOfStreams()
         ctx.write_header(fd, numberOfStreams)
 
         currStream = 0
 
-        # write sysinfo
-        if self.sysinfo is not None:
-            ctx.add_stream_data(fd, currStream, MiniDumpStreamType.SystemInfoStream, self.sysinfo.to_bytes())
+        # write content of streams...
+        for stream in self.streams:
+            ctx.add_stream_data(fd, currStream, stream.getStreamType(), stream.getContent())
             currStream = currStream + 1
 
-        # build memory list stream
+        # append memory64 raw content at end of list..
         fd.flush()
         Memory64DataSize = 16 + len(self.memory64) * 16
         Memory64StreamOff = fd.tell()
@@ -69,7 +80,6 @@ class MiniDumpWriter:
         
         memoryList = struct.pack('<QQ', len(self.memory64), BaseRVA)
         fd.write(memoryList)
-        
         
         # write datablock..
         for m in self.memory64:
@@ -85,4 +95,4 @@ class MiniDumpWriter:
         for m in self.memory64:
             ctx.append(fd, m.to_bytes(), m.length())
 
-        # build memory64 list stream
+        # dump done...
